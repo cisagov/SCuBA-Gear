@@ -330,14 +330,18 @@ function Invoke-SCuBA {
         $FolderName = "$($ScubaConfig.OutFolderName)_$($FormattedTimeStamp)"
         New-Item -Path $OutFolderPath -Name $($FolderName) -ItemType Directory -ErrorAction 'Stop' | Out-Null
         $OutFolderPath = Join-Path -Path $OutFolderPath -ChildPath $FolderName -ErrorAction 'Stop'
+        
+        # Create Error Log
+        $ErrorLogName = "ScubaErrorLog.json"
+        New-Item -Path -Path $OutFolderPath -Name $ErrorLogName
 
         # Product Authentication
         $ConnectionParams = @{
-            'LogIn' = $ScubaConfig.LogIn;
-            'ProductNames' = $ScubaConfig.ProductNames;
-            'M365Environment' = $ScubaConfig.M365Environment;
+            'ScubaConfig' = $ScubaConfig;
             'BoundParameters' = $PSBoundParameters;
         }
+
+        # Authenticate to relevant M365 Products
         $ProdAuthFailed = Invoke-Connection @ConnectionParams
         if ($ProdAuthFailed.Count -gt 0) {
             $ScubaConfig.ProductNames = Compare-ProductList -ProductNames $ScubaConfig.ProductNames `
@@ -360,10 +364,12 @@ function Invoke-SCuBA {
                 'BoundParameters' = $PSBoundParameters;
             }
             $ProdProviderFailed = Invoke-ProviderList @ProviderParams
+
+            
             if ($ProdProviderFailed.Count -gt 0) {
                 $ScubaConfig.ProductNames = Compare-ProductList -ProductNames $ScubaConfig.ProductNames `
-                 -ProductsFailed $ProdProviderFailed `
-                 -ExceptionMessage 'All indicated Product Providers failed to execute'
+                -ProductsFailed $ProdProviderFailed `
+                -ExceptionMessage 'All indicated Product Providers failed to execute'
             }
 
             # OPA Rego invocation
@@ -1163,19 +1169,8 @@ function Invoke-Connection {
     param(
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [boolean]
-        $LogIn,
-
-        [Parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]
-        [ValidateSet("teams", "exo", "defender", "aad", "powerplatform", "sharepoint", '*', IgnoreCase = $false)]
-        [string[]]
-        $ProductNames,
-
-        [ValidateSet("commercial", "gcc", "gcchigh", "dod")]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $M365Environment = "commercial",
+        [PSCustomObject]
+        $ScubaConfig,
 
         [Parameter(Mandatory=$true)]
         [hashtable]
@@ -1183,8 +1178,8 @@ function Invoke-Connection {
     )
 
     $ConnectTenantParams = @{
-        'ProductNames' = $ProductNames;
-        'M365Environment' = $M365Environment
+        'ProductNames' = $ScubaConfig.ProductNames;
+        'M365Environment' = $ScubaConfig.M365Environment
     }
 
     if ($BoundParameters.AppID) {
@@ -1192,7 +1187,7 @@ function Invoke-Connection {
         $ConnectTenantParams += @{ServicePrincipalParams = $ServicePrincipalParams;}
     }
 
-    if ($LogIn) {
+    if ($ScubaConfig.LogIn) {
         $AnyFailedAuth = Connect-Tenant @ConnectTenantParams
         $AnyFailedAuth
     }
@@ -1436,125 +1431,223 @@ function Invoke-SCuBACached {
     #>
     [CmdletBinding()]
     param (
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [boolean]
         $ExportProvider = $true,
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [ValidateSet("teams", "exo", "defender", "aad", "powerplatform", "sharepoint", '*', IgnoreCase = $false)]
         [string[]]
         $ProductNames = [ScubaConfig]::ScubaDefault('AllProductNames'),
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateSet("commercial", "gcc", "gcchigh", "dod")]
         [ValidateNotNullOrEmpty()]
         [string]
         $M365Environment = [ScubaConfig]::ScubaDefault('DefaultM365Environment'),
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateScript({Test-Path -PathType Container $_})]
         [ValidateNotNullOrEmpty()]
         [string]
         $OPAPath = [ScubaConfig]::ScubaDefault('DefaultOPAPath'),
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [ValidateSet($true, $false)]
         [boolean]
         $LogIn = [ScubaConfig]::ScubaDefault('DefaultLogIn'),
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [switch]
         $Version,
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [string]
         $AppID,
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [string]
         $CertificateThumbprint,
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [string]
         $Organization,
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [string]
         $OutPath = [ScubaConfig]::ScubaDefault('DefaultOutPath'),
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [string]
         $OutProviderFileName = [ScubaConfig]::ScubaDefault('DefaultOutProviderFileName'),
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [string]
         $OutRegoFileName = [ScubaConfig]::ScubaDefault('DefaultOutRegoFileName'),
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [string]
         $OutReportName = [ScubaConfig]::ScubaDefault('DefaultOutReportName'),
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [switch]
         $MergeJson,
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
         [string]
         $OutJsonFileName = [ScubaConfig]::ScubaDefault('DefaultOutJsonFileName'),
 
+        [Parameter(Mandatory = $true, ParameterSetName = 'Configuration')]
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({
+            if (-Not ($_ | Test-Path)){
+                throw "SCuBA configuration file or folder does not exist. $_"
+            }
+            if (-Not ($_ | Test-Path -PathType Leaf)){
+                throw "SCuBA configuration Path argument must be a file."
+            }
+            return $true
+        })]
+        [System.IO.FileInfo]
+        $ConfigFilePath,
+
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet($true, $false)]
         [switch]
-        $Quiet,
+        $DarkMode,
 
+        [Parameter(Mandatory = $false, ParameterSetName = 'Configuration')]
         [Parameter(Mandatory = $false, ParameterSetName = 'Report')]
         [switch]
-        $DarkMode
+        $Quiet
         )
         process {
-            $ParentPath = Split-Path $PSScriptRoot -Parent
-            $ScubaManifest = Import-PowerShellDataFile (Join-Path -Path $ParentPath -ChildPath 'ScubaGear.psd1' -Resolve)
+            # Retrive ScubaGear Module versions
+            $ParentPath = Split-Path $PSScriptRoot -Parent -ErrorAction 'Stop'
+            $ScubaManifest = Import-PowerShellDataFile (Join-Path -Path $ParentPath -ChildPath 'ScubaGear.psd1' -Resolve) -ErrorAction 'Stop'
             $ModuleVersion = $ScubaManifest.ModuleVersion
-
             if ($Version) {
                 Write-Output("SCuBA Gear v$ModuleVersion")
                 return
             }
 
-            if ($ProductNames -eq '*'){
-                $ProductNames = "teams", "exo", "defender", "aad", "sharepoint", "powerplatform"
+            # Transform ProductNames into list of all products if it contains wildcard
+            if ($ProductNames.Contains('*')){
+                $ProductNames = $PSBoundParameters['ProductNames'] = "aad", "defender", "exo", "powerplatform", "sharepoint", "teams"
+                Write-Debug "Setting ProductName to all products because of wildcard"
+            }
+
+            # Default execution ParameterSet
+            if ($PSCmdlet.ParameterSetName -eq 'Report'){
+
+                $ProvidedParameters = @{
+                    'ProductNames' = $ProductNames | Sort-Object -Unique
+                    'M365Environment' = $M365Environment
+                    'OPAPath' = $OPAPath
+                    'LogIn' = $LogIn
+                    'DisconnectOnExit' = $DisconnectOnExit
+                    'OutPath' = $OutPath
+                    'OutFolderName' = $OutFolderName
+                    'OutProviderFileName' = $OutProviderFileName
+                    'OutRegoFileName' = $OutRegoFileName
+                    'OutReportName' = $OutReportName
+                    'MergeJson' = $MergeJson
+                    'OutJsonFileName' = $OutJsonFileName
+                }
+
+                $ScubaConfig = New-Object -Type PSObject -Property $ProvidedParameters
+            }
+
+            Remove-Resources # Unload helper modules if they are still in the PowerShell session
+            Import-Resources # Imports Providers, RunRego, CreateReport, Connection
+
+            # Loads and executes parameters from a Configuration file
+            if ($PSCmdlet.ParameterSetName -eq 'Configuration'){
+                [ScubaConfig]::ResetInstance()
+                if (-Not ([ScubaConfig]::GetInstance().LoadConfig($ConfigFilePath))){
+                    Write-Error -Message "The config file failed to load: $ConfigFilePath"
+                }
+                else {
+                    $ScubaConfig = [ScubaConfig]::GetInstance().Configuration
+                }
+
+                # Authentications parameters use below
+                $SPparams = 'AppID', 'CertificateThumbprint', 'Organization'
+
+                # Bound parameters indicate a parameter has been passed in.
+                # However authentication parameters are special and are not handled within
+                # the config module (since you can't make a default).  If an authentication
+                # parameter is set in the config file but not supplied on the command line
+                # set the Bound parameters value which make it appear as if it was supplied on the
+                # command line
+
+                foreach ( $value in $SPparams )
+                {
+                    if  ( $ScubaConfig[$value] -and  (-not  $PSBoundParameters[$value] )) {
+                        $PSBoundParameters.Add($value, $ScubaConfig[$value])
+                    }
+                }
+
+                # Now the bound parameters contain the following
+                # 1) Non Authentication Parameters explicitly passed in
+                # 2) Authentication parameters ( passed in or from the config file as per code above )
+                #
+                # So to provide for a command line override of config values just set the corresponding
+                # config value from the bound parameters to override.  This is redundant copy for
+                # the authentication parameters ( but keeps the logic simpler)
+                # We do not allow ConfigFilePath to be copied as it will be propagated to the
+                # config module by reference and causes issues
+                #
+                foreach ( $value in $PSBoundParameters.keys ) {
+                    if ( $value -ne "ConfigFilePath" )
+                    {
+                        $ScubaConfig[$value] = $PSBoundParameters[$value]
+                    }
+                }
             }
 
             # Create outpath if $Outpath does not exist
             if(-not (Test-Path -PathType "container" $OutPath))
             {
-                New-Item -ItemType "Directory" -Path $OutPath | Out-Null
+                New-Item -ItemType "Directory" -Path $ScubaConfig.OutPath | Out-Null
             }
-            $OutFolderPath = $OutPath
-            $ProductNames = $ProductNames | Sort-Object -Unique
+            $OutFolderPath = $ScubaConfig.OutPath
 
             Remove-Resources
             Import-Resources # Imports Providers, RunRego, CreateReport, Connection
 
             # Authenticate
             $ConnectionParams = @{
-                'LogIn' = $LogIn;
-                'ProductNames' = $ProductNames;
-                'M365Environment' = $M365Environment;
+                'ScubaConfig' = $ScubaConfig;
                 'BoundParameters' = $PSBoundParameters;
             }
 
@@ -1574,12 +1667,12 @@ function Invoke-SCuBACached {
                 }
                 $TenantDetails = Get-TenantDetail -ProductNames $ProductNames -M365Environment $M365Environment
                 $ProviderParams = @{
-                    'ProductNames' = $ProductNames;
-                    'M365Environment' = $M365Environment;
+                    'ProductNames' = $ScubaConfig.ProductNames;
+                    'M365Environment' = $ScubaConfig.M365Environment;
                     'TenantDetails' = $TenantDetails;
                     'ModuleVersion' = $ModuleVersion;
                     'OutFolderPath' = $OutFolderPath;
-                    'OutProviderFileName' = $OutProviderFileName;
+                    'OutProviderFileName' = $ScubaConfig.OutProviderFileName;
                     'BoundParameters' = $PSBoundParameters;
                 }
                 Invoke-ProviderList @ProviderParams
@@ -1588,23 +1681,23 @@ function Invoke-SCuBACached {
             $SettingsExport = Get-Content $FileName | ConvertFrom-Json
             $TenantDetails = $SettingsExport.tenant_details
             $RegoParams = @{
-                'ProductNames' = $ProductNames;
-                'OPAPath' = $OPAPath;
+                'ProductNames' = $ScubaConfig.ProductNames;
+                'OPAPath' = $ScubaConfig.OPAPath;
                 'ParentPath' = $ParentPath;
                 'OutFolderPath' = $OutFolderPath;
-                'OutProviderFileName' = $OutProviderFileName;
-                'OutRegoFileName' = $OutRegoFileName;
+                'OutProviderFileName' = $ScubaConfig.OutProviderFileName;
+                'OutRegoFileName' = $ScubaConfig.OutRegoFileName;
             }
             $ReportParams = @{
-                'ProductNames' = $ProductNames;
-                'TenantDetails' = $TenantDetails;
-                'ModuleVersion' = $ModuleVersion;
-                'OutFolderPath' = $OutFolderPath;
-                'OutProviderFileName' = $OutProviderFileName;
-                'OutRegoFileName' = $OutRegoFileName;
-                'OutReportName' = $OutReportName;
-                'Quiet' = $Quiet;
-                'DarkMode' = $DarkMode;
+                'ProductNames' = $ScubaConfig.ProductNames
+                'TenantDetails' = $TenantDetails
+                'ModuleVersion' = $ModuleVersion
+                'OutFolderPath' = $OutFolderPath
+                'OutProviderFileName' = $ScubaConfig.OutProviderFileName
+                'OutRegoFileName' = $ScubaConfig.OutRegoFileName
+                'OutReportName' = $ScubaConfig.OutReportName
+                'DarkMode' = $DarkMode
+                'Quiet' = $Quiet
             }
             Invoke-RunRego @RegoParams
             Invoke-ReportCreation @ReportParams
@@ -1612,12 +1705,12 @@ function Invoke-SCuBACached {
             if ($MergeJson) {
                 # Craft the complete json version of the output
                 $JsonParams = @{
-                    'ProductNames' = $ProductNames;
+                    'ProductNames' = $ScubaConfig.ProductNames;
                     'OutFolderPath' = $OutFolderPath;
-                    'OutProviderFileName' = $OutProviderFileName;
+                    'OutProviderFileName' = $ScubaConfig.OutProviderFileName;
                     'TenantDetails' = $TenantDetails;
                     'ModuleVersion' = $ModuleVersion;
-                    'OutJsonFileName' = $OutJsonFileName;
+                    'OutJsonFileName' = $ScubaConfig.OutJsonFileName;
                 }
                 Merge-JsonOutput @JsonParams
             }
