@@ -351,12 +351,10 @@ function Invoke-SCuBA {
         try {
             # Provider Execution
             $ProviderParams = @{
-                'ProductNames' = $ScubaConfig.ProductNames;
-                'M365Environment' = $ScubaConfig.M365Environment;
+                'ScubaConfig' = $ScubaConfig;
                 'TenantDetails' = $TenantDetails;
                 'ModuleVersion' = $ModuleVersion;
                 'OutFolderPath' = $OutFolderPath;
-                'OutProviderFileName' = $ScubaConfig.OutProviderFileName;
                 'BoundParameters' = $PSBoundParameters;
             }
             $ProdProviderFailed = Invoke-ProviderList @ProviderParams
@@ -370,12 +368,9 @@ function Invoke-SCuBA {
 
             # OPA Rego invocation
             $RegoParams = @{
-                'ProductNames' = $ScubaConfig.ProductNames;
-                'OPAPath' = $ScubaConfig.OPAPath;
+                'ScubaConfig' = $ScubaConfig;
                 'ParentPath' = $ParentPath;
                 'OutFolderPath' = $OutFolderPath;
-                'OutProviderFileName' = $ScubaConfig.OutProviderFileName;
-                'OutRegoFileName' = $ScubaConfig.OutRegoFileName;
             }
             $ProdRegoFailed = Invoke-RunRego @RegoParams
             if ($ProdRegoFailed.Count -gt 0) {
@@ -475,17 +470,11 @@ function Invoke-ProviderList {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [ValidateSet("teams", "exo", "defender", "aad", "powerplatform", "sharepoint", '*', IgnoreCase = $false)]
-        [string[]]
-        $ProductNames,
 
-        [Parameter(Mandatory = $true)]
-        [ValidateSet("commercial", "gcc", "gcchigh", "dod", IgnoreCase = $false)]
+        [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [string]
-        $M365Environment,
+        [PSObject]
+        $ScubaConfig,
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -503,11 +492,6 @@ function Invoke-ProviderList {
         $OutFolderPath,
 
         [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $OutProviderFileName,
-
-        [Parameter(Mandatory = $true)]
         [hashtable]
         $BoundParameters
     )
@@ -518,13 +502,13 @@ function Invoke-ProviderList {
             $ProviderJSON = @"
 "@
             $N = 0
-            $Len = $ProductNames.Length
+            $Len = $ScubaConfig.ProductNames.Length
             $ProdProviderFailed = @()
             $ConnectTenantParams = @{
-                'M365Environment' = $M365Environment
+                'M365Environment' = $ScubaConfig.M365Environment
             }
             $SPOProviderParams = @{
-                'M365Environment' = $M365Environment
+                'M365Environment' = $ScubaConfig.M365Environment
             }
 
             $PnPFlag = $false
@@ -535,7 +519,7 @@ function Invoke-ProviderList {
                 $SPOProviderParams += @{PnPFlag = $PnPFlag }
             }
 
-            foreach ($Product in $ProductNames) {
+            foreach ($Product in $ScubaConfig.ProductNames) {
                 $BaselineName = $ArgToProd[$Product]
                 $N += 1
                 $Percent = $N * 100 / $Len
@@ -552,7 +536,7 @@ function Invoke-ProviderList {
                     $RetVal = ""
                     switch ($Product) {
                         "aad" {
-                            $RetVal = Export-AADProvider -M365Environment $M365Environment | Select-Object -Last 1
+                            $RetVal = Export-AADProvider -M365Environment $ScubaConfig.M365Environment | Select-Object -Last 1
                         }
                         "exo" {
                             $RetVal = Export-EXOProvider | Select-Object -Last 1
@@ -561,7 +545,7 @@ function Invoke-ProviderList {
                             $RetVal = Export-DefenderProvider @ConnectTenantParams  | Select-Object -Last 1
                         }
                         "powerplatform" {
-                            $RetVal = Export-PowerPlatformProvider -M365Environment $M365Environment | Select-Object -Last 1
+                            $RetVal = Export-PowerPlatformProvider -M365Environment $ScubaConfig.M365Environment | Select-Object -Last 1
                         }
                         "sharepoint" {
                             $RetVal = Export-SharePointProvider @SPOProviderParams | Select-Object -Last 1
@@ -619,7 +603,7 @@ function Invoke-ProviderList {
             # "\B", ex: "Removed an entry in Tenant Allow\Block List"
             $BaselineSettingsExport = $BaselineSettingsExport.replace("\B", "/B")
 
-            $FinalPath = Join-Path -Path $OutFolderPath -ChildPath "$($OutProviderFileName).json" -ErrorAction 'Stop'
+            $FinalPath = Join-Path -Path $OutFolderPath -ChildPath "$($ScubaConfig.OutProviderFileName).json" -ErrorAction 'Stop'
             $BaselineSettingsExport | Set-Content -Path $FinalPath -Encoding $(Get-FileEncoding) -ErrorAction 'Stop'
             $ProdProviderFailed
         }
@@ -643,15 +627,10 @@ function Invoke-RunRego {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet("teams", "exo", "defender", "aad", "powerplatform", "sharepoint", '*', IgnoreCase = $false)]
-        [string[]]
-        $ProductNames,
-
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $OPAPath = [ScubaConfig]::ScubaDefault('DefaultOPAPath'),
+        [PSObject]
+        $ScubaConfig,
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -661,24 +640,14 @@ function Invoke-RunRego {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [String]
-        $OutFolderPath,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [String]
-        $OutProviderFileName,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $OutRegoFileName
+        $OutFolderPath
     )
     process {
         try {
             $ProdRegoFailed = @()
             $TestResults = @()
             $N = 0
-            $Len = $ProductNames.Length
+            $Len = $ScubaConfig.ProductNames.Length
             foreach ($Product in $ProductNames) {
                 $BaselineName = $ArgToProd[$Product]
                 $N += 1
@@ -693,14 +662,14 @@ function Invoke-RunRego {
                     'ErrorAction' = 'Stop';
                 }
                 Write-Progress @ProgressParams
-                $InputFile = Join-Path -Path $OutFolderPath "$($OutProviderFileName).json" -ErrorAction 'Stop'
+                $InputFile = Join-Path -Path $OutFolderPath "$($ScubaConfig.OutProviderFileName).json" -ErrorAction 'Stop'
                 $RegoFile = Join-Path -Path $ParentPath -ChildPath "Rego" -ErrorAction 'Stop'
                 $RegoFile = Join-Path -Path $RegoFile -ChildPath "$($BaselineName)Config.rego" -ErrorAction 'Stop'
                 $params = @{
                     'InputFile' = $InputFile;
                     'RegoFile' = $RegoFile;
                     'PackageName' = $Product;
-                    'OPAPath' = $OPAPath
+                    'OPAPath' = $ScubaConfig.OPAPath
                 }
                 try {
                     $RetVal = Invoke-Rego @params
@@ -714,7 +683,7 @@ function Invoke-RunRego {
             }
 
             $TestResultsJson = $TestResults | ConvertTo-Json -Depth 5 -ErrorAction 'Stop'
-            $FileName = Join-Path -Path $OutFolderPath "$($OutRegoFileName).json" -ErrorAction 'Stop'
+            $FileName = Join-Path -Path $OutFolderPath "$($ScubaConfig.OutRegoFileName).json" -ErrorAction 'Stop'
             $TestResultsJson | Set-Content -Path $FileName -Encoding $(Get-FileEncoding) -ErrorAction 'Stop'
 
             foreach ($Product in $TestResults) {
@@ -727,7 +696,7 @@ function Invoke-RunRego {
                 }
             }
             $TestResultsCsv = $TestResults | ConvertTo-Csv -NoTypeInformation -ErrorAction 'Stop'
-            $CSVFileName = Join-Path -Path $OutFolderPath "$($OutRegoFileName).csv" -ErrorAction 'Stop'
+            $CSVFileName = Join-Path -Path $OutFolderPath "$($ScubaConfig.OutRegoFileName).csv" -ErrorAction 'Stop'
             $TestResultsCsv | Set-Content -Path $CSVFileName -Encoding $(Get-FileEncoding) -ErrorAction 'Stop'
             $ProdRegoFailed
         }
@@ -1165,7 +1134,7 @@ function Invoke-Connection {
     param(
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [PSCustomObject]
+        [PSObject]
         $ScubaConfig,
 
         [Parameter(Mandatory=$true)]
@@ -1663,12 +1632,10 @@ function Invoke-SCuBACached {
                 }
                 $TenantDetails = Get-TenantDetail -ProductNames $ProductNames -M365Environment $M365Environment
                 $ProviderParams = @{
-                    'ProductNames' = $ScubaConfig.ProductNames;
-                    'M365Environment' = $ScubaConfig.M365Environment;
+                    'ScubaConfig' = $ScubaConfig;
                     'TenantDetails' = $TenantDetails;
                     'ModuleVersion' = $ModuleVersion;
                     'OutFolderPath' = $OutFolderPath;
-                    'OutProviderFileName' = $ScubaConfig.OutProviderFileName;
                     'BoundParameters' = $PSBoundParameters;
                 }
                 Invoke-ProviderList @ProviderParams
@@ -1677,12 +1644,9 @@ function Invoke-SCuBACached {
             $SettingsExport = Get-Content $FileName | ConvertFrom-Json
             $TenantDetails = $SettingsExport.tenant_details
             $RegoParams = @{
-                'ProductNames' = $ScubaConfig.ProductNames;
-                'OPAPath' = $ScubaConfig.OPAPath;
+                'ScubaConfig' = $ScubaConfig;
                 'ParentPath' = $ParentPath;
                 'OutFolderPath' = $OutFolderPath;
-                'OutProviderFileName' = $ScubaConfig.OutProviderFileName;
-                'OutRegoFileName' = $ScubaConfig.OutRegoFileName;
             }
             $ReportParams = @{
                 'ProductNames' = $ScubaConfig.ProductNames
