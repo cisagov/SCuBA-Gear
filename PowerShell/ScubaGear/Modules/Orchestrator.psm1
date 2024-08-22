@@ -330,10 +330,6 @@ function Invoke-SCuBA {
         $FolderName = "$($ScubaConfig.OutFolderName)_$($FormattedTimeStamp)"
         New-Item -Path $OutFolderPath -Name $($FolderName) -ItemType Directory -ErrorAction 'Stop' | Out-Null
         $OutFolderPath = Join-Path -Path $OutFolderPath -ChildPath $FolderName -ErrorAction 'Stop'
-        
-        # Create Error Log
-        $ErrorLogName = "ScubaErrorLog.json"
-        New-Item -Path -Path $OutFolderPath -Name $ErrorLogName
 
         # Product Authentication
         $ConnectionParams = @{
