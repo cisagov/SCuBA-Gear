@@ -4,23 +4,39 @@ Import-Module (Join-Path -Path $PSScriptRoot -ChildPath $OrchestratorPath) -Func
 InModuleScope Orchestrator {
     Describe -Tag 'Orchestrator' -Name 'Invoke-Connection' {
         BeforeAll {
-            function Connect-Tenant {throw 'this will be mocked'}
-            Mock -ModuleName Orchestrator Connect-Tenant {@('aad')}
+            function Connect-Tenant { throw 'this will be mocked' }
+            Mock -ModuleName Orchestrator Connect-Tenant { @('aad') }
         }
-        It 'Login is false'{
-            Invoke-Connection -Login $false -ProductNames 'aad' -BoundParameters @{} | Should -BeNullOrEmpty
-        }
-        It 'Login is true'{
-            Invoke-Connection -Login $true -ProductNames 'aad' -BoundParameters @{} | Should -Not -BeNullOrEmpty
-        }
-        It 'Has AppId'{
-            Mock -ModuleName Orchestrator Connect-Tenant {@('aad')}
-            $BoundParameters = @{
-                AppID = "a"
-                CertificateThumbprint = "b"
-                Organization = "c"
+        It 'Login is false' {
+            $ScubaConfig = @{
+                Login           = $false
+                ProductNames    = @('aad'); 
+                M365Environment = 'commercial';
             }
-            Invoke-Connection -Login $true -ProductNames 'aad' -BoundParameters $BoundParameters | Should -Not -BeNullOrEmpty
+
+            Invoke-Connection -ScubaConfig $ScubaConfig -BoundParameters @{} | Should -BeNullOrEmpty
+        }
+        It 'Login is true' {
+            $ScubaConfig = @{
+                Login           = $true
+                ProductNames    = @('aad'); 
+                M365Environment = 'commercial';
+            }
+            Invoke-Connection -ScubaConfig $ScubaConfig -BoundParameters @{} | Should -Not -BeNullOrEmpty
+        }
+        It 'Has AppId' {
+            Mock -ModuleName Orchestrator Connect-Tenant { @('aad') }
+            $ScubaConfig = @{
+                Login           = $true
+                ProductNames    = @('aad'); 
+                M365Environment = 'commercial';
+            }
+            $BoundParameters = @{
+                AppID                 = "a"
+                CertificateThumbprint = "b"
+                Organization          = "c"
+            }
+            Invoke-Connection -ScubaConfig $ScubaConfig -BoundParameters $BoundParameters | Should -Not -BeNullOrEmpty
             Should -Invoke -CommandName Connect-Tenant -Exactly -Times 1
         }
     }
