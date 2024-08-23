@@ -383,13 +383,10 @@ function Invoke-SCuBA {
             # Converted back from JSON String for PS Object use
             $TenantDetails = $TenantDetails | ConvertFrom-Json
             $ReportParams = @{
-                'ProductNames' = $ScubaConfig.ProductNames
+                'ScubaConfig' = $ScubaConfig
                 'TenantDetails' = $TenantDetails
                 'ModuleVersion' = $ModuleVersion
                 'OutFolderPath' = $OutFolderPath
-                'OutProviderFileName' = $ScubaConfig.OutProviderFileName
-                'OutRegoFileName' = $ScubaConfig.OutRegoFileName
-                'OutReportName' = $ScubaConfig.OutReportName
                 'DarkMode' = $DarkMode
                 'Quiet' = $Quiet
             }
@@ -887,9 +884,8 @@ function Invoke-ReportCreation {
     param(
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet("teams", "exo", "defender", "aad", "powerplatform", "sharepoint", '*', IgnoreCase = $false)]
-        [string[]]
-        $ProductNames,
+        [PSObject]
+        $ScubaConfig,
 
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
@@ -906,21 +902,6 @@ function Invoke-ReportCreation {
         [string]
         $OutFolderPath,
 
-        [Parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $OutProviderFileName,
-
-        [Parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $OutRegoFileName,
-
-        [Parameter(Mandatory=$true)]
-        [ValidateNotNullOrEmpty()]
-        [string]
-        $OutReportName,
-
         [Parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [switch]
@@ -934,7 +915,7 @@ function Invoke-ReportCreation {
     process {
         try {
             $N = 0
-            $Len = $ProductNames.Length
+            $Len = $ScubaConfig.ProductNames.Length
             $Fragment = @()
             $IndividualReportPath = Join-Path -Path $OutFolderPath -ChildPath $IndividualReportFolderName
             New-Item -Path $IndividualReportPath -ItemType "Directory" -ErrorAction "SilentlyContinue" | Out-Null
@@ -943,9 +924,9 @@ function Invoke-ReportCreation {
             $Images = Join-Path -Path $ReporterPath -ChildPath "images" -ErrorAction 'Stop'
             Copy-Item -Path $Images -Destination $IndividualReportPath -Force -Recurse -ErrorAction 'Stop'
 
-            $SecureBaselines =  Import-SecureBaseline -ProductNames $ProductNames
+            $SecureBaselines =  Import-SecureBaseline -ProductNames $ScubaConfig.ProductNames
 
-            foreach ($Product in $ProductNames) {
+            foreach ($Product in $ScubaConfig.ProductNames) {
                 $BaselineName = $ArgToProd[$Product]
                 $N += 1
                 $Percent = $N*100/$Len
@@ -966,8 +947,8 @@ function Invoke-ReportCreation {
                     'FullName' = $FullName;
                     'IndividualReportPath' = $IndividualReportPath;
                     'OutPath' = $OutFolderPath;
-                    'OutProviderFileName' = $OutProviderFileName;
-                    'OutRegoFileName' = $OutRegoFileName;
+                    'OutProviderFileName' = $ScubaConfig.OutProviderFileName;
+                    'OutRegoFileName' = $ScubaConfig.OutRegoFileName;
                     'DarkMode' = $DarkMode;
                     'SecureBaselines' = $SecureBaselines
                 }
@@ -1052,7 +1033,7 @@ function Invoke-ReportCreation {
             </script>")
 
             Add-Type -AssemblyName System.Web -ErrorAction 'Stop'
-            $ReportFileName = Join-Path -Path $OutFolderPath "$($OutReportName).html" -ErrorAction 'Stop'
+            $ReportFileName = Join-Path -Path $OutFolderPath "$($ScubaConfig.OutReportName).html" -ErrorAction 'Stop'
             [System.Web.HttpUtility]::HtmlDecode($ReportHTML) | Out-File $ReportFileName -ErrorAction 'Stop'
             if (-Not $Quiet) {
                 Invoke-Item $ReportFileName
@@ -1640,7 +1621,7 @@ function Invoke-SCuBACached {
                 }
                 Invoke-ProviderList @ProviderParams
             }
-            $FileName = Join-Path -Path $OutPath -ChildPath "$($OutProviderFileName).json"
+            $FileName = Join-Path -Path $OutPath -ChildPath "$($ScubaConfig.OutProviderFileName).json"
             $SettingsExport = Get-Content $FileName | ConvertFrom-Json
             $TenantDetails = $SettingsExport.tenant_details
             $RegoParams = @{
@@ -1649,13 +1630,10 @@ function Invoke-SCuBACached {
                 'OutFolderPath' = $OutFolderPath;
             }
             $ReportParams = @{
-                'ProductNames' = $ScubaConfig.ProductNames
+                'ScubaConfig' = $ScubaConfig
                 'TenantDetails' = $TenantDetails
                 'ModuleVersion' = $ModuleVersion
                 'OutFolderPath' = $OutFolderPath
-                'OutProviderFileName' = $ScubaConfig.OutProviderFileName
-                'OutRegoFileName' = $ScubaConfig.OutRegoFileName
-                'OutReportName' = $ScubaConfig.OutReportName
                 'DarkMode' = $DarkMode
                 'Quiet' = $Quiet
             }

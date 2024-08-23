@@ -27,8 +27,8 @@ Describe -Tag 'Orchestrator' -Name 'Invoke-ProviderList' {
     Context 'When running the providers on commercial tenants' {
         BeforeAll {
             
-            [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'ConfigParams')]
-            $ConfigParams = @{
+            [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'ConfigParameters')]
+            $ConfigParameters = @{
                 OutProviderFileName = "ProviderSettingsExport";
                 M365Environment = "commercial";
             }
@@ -42,58 +42,58 @@ Describe -Tag 'Orchestrator' -Name 'Invoke-ProviderList' {
             }
         }
         It 'With -ProductNames "aad", should not throw' {
-            $ConfigParams += @{
+            $ConfigParameters += @{
                 ProductNames = @("aad")
             }
-            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
 
             {Invoke-ProviderList @ProviderParameters} | Should -Not -Throw
         }
         It 'With -ProductNames "defender", should not throw' {
-            $ConfigParams += @{
+            $ConfigParameters += @{
                 ProductNames = @("defender")
             }
-            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
 
             {Invoke-ProviderList @ProviderParameters} | Should -Not -Throw
         }
         It 'With -ProductNames "exo", should not throw' {
-            $ConfigParams += @{
+            $ConfigParameters += @{
                 ProductNames = @("exo")
             }
-            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
 
             {Invoke-ProviderList @ProviderParameters} | Should -Not -Throw
         }
         It 'With -ProductNames "powerplatform", should not throw' {
-            $ConfigParams += @{
+            $ConfigParameters += @{
                 ProductNames = @("powerplatform")
             }
-            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
 
             {Invoke-ProviderList @ProviderParameters} | Should -Not -Throw
         }
         It 'With -ProductNames "sharepoint", should not throw' {
-            $ConfigParams += @{
+            $ConfigParameters += @{
                 ProductNames = @("sharepoint")
             }
-            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
 
             {Invoke-ProviderList @ProviderParameters} | Should -Not -Throw
         }
         It 'With -ProductNames "teams", should not throw' {
-            $ConfigParams += @{
+            $ConfigParameters += @{
                 ProductNames = @("teams")
             }
-            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
 
             {Invoke-ProviderList @ProviderParameters} | Should -Not -Throw
         }
         It 'With all products, should not throw' {
-            $ConfigParams += @{
+            $ConfigParameters += @{
                 ProductNames = @("aad", "defender", "exo", "powerplatform", "sharepoint", "teams")
             }
-            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+            $ProviderParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
             
             {Invoke-ProviderList @ProviderParameters} | Should -Not -Throw
         }

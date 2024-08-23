@@ -8,25 +8,27 @@ InModuleScope Orchestrator {
             Mock -ModuleName Orchestrator Connect-Tenant { @('aad') }
         }
         It 'Login is false' {
-            $ScubaConfig = @{
+            $ConfigParameters = @{
                 Login           = $false
                 ProductNames    = @('aad'); 
                 M365Environment = 'commercial';
             }
+            $ScubaConfig = New-Object -Type PSObject -Property $ConfigParameters
 
             Invoke-Connection -ScubaConfig $ScubaConfig -BoundParameters @{} | Should -BeNullOrEmpty
         }
         It 'Login is true' {
-            $ScubaConfig = @{
+            $ConfigParameters = @{
                 Login           = $true
                 ProductNames    = @('aad'); 
                 M365Environment = 'commercial';
             }
+            $ScubaConfig = New-Object -Type PSObject -Property $ConfigParameters
             Invoke-Connection -ScubaConfig $ScubaConfig -BoundParameters @{} | Should -Not -BeNullOrEmpty
         }
         It 'Has AppId' {
             Mock -ModuleName Orchestrator Connect-Tenant { @('aad') }
-            $ScubaConfig = @{
+            $ConfigParameters = @{
                 Login           = $true
                 ProductNames    = @('aad'); 
                 M365Environment = 'commercial';
@@ -36,6 +38,8 @@ InModuleScope Orchestrator {
                 CertificateThumbprint = "b"
                 Organization          = "c"
             }
+            $ScubaConfig = New-Object -Type PSObject -Property $ConfigParameters
+
             Invoke-Connection -ScubaConfig $ScubaConfig -BoundParameters $BoundParameters | Should -Not -BeNullOrEmpty
             Should -Invoke -CommandName Connect-Tenant -Exactly -Times 1
         }

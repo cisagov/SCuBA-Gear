@@ -17,8 +17,8 @@ InModuleScope Orchestrator {
         }
         Context 'When running the rego on a provider json' {
             BeforeAll {
-                [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'ConfigParams')]
-                $ConfigParams = @{
+                [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'ConfigParameters')]
+                $ConfigParameters = @{
                     OPAPath             = "./"
                     OutProviderFileName = "ProviderSettingsExport";
                     OutRegoFileName     = "TestResults"
@@ -32,52 +32,52 @@ InModuleScope Orchestrator {
                 }
             }
             It 'With -ProductNames "aad", should not throw' {
-                $ConfigParams += @{
+                $ConfigParameters += @{
                     ProductNames = @("aad")
                 }
-                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
                 { Invoke-RunRego @RunRegoParameters } | Should -Not -Throw
             }
             It 'With -ProductNames "defender", should not throw' {
-                $ConfigParams += @{
+                $ConfigParameters += @{
                     ProductNames = @("defender")
                 }
-                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
                 { Invoke-RunRego @RunRegoParameters } | Should -Not -Throw
             }
             It 'With -ProductNames "exo", should not throw' {
-                $ConfigParams += @{
+                $ConfigParameters += @{
                     ProductNames = @("exo")
                 }
-                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
                 { Invoke-RunRego @RunRegoParameters } | Should -Not -Throw
             }
             It 'With -ProductNames "powerplatform", should not throw' {
-                $ConfigParams += @{
+                $ConfigParameters += @{
                     ProductNames = @("powerplatform")
                 }
-                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
                 { Invoke-RunRego @RunRegoParameters } | Should -Not -Throw
             }
             It 'With -ProductNames "sharepoint", should not throw' {
-                $ConfigParams += @{
+                $ConfigParameters += @{
                     ProductNames = @("sharepoint")
                 }
-                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
                 { Invoke-RunRego @RunRegoParameters } | Should -Not -Throw
             }
             It 'With -ProductNames "teams", should not throw' {
-                $ConfigParams += @{
+                $ConfigParameters += @{
                     ProductNames = @("teams")
                 }
-                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
                 { Invoke-RunRego @RunRegoParameters } | Should -Not -Throw
             }
             It 'With all products, should not throw' {
-                $ConfigParams += @{
+                $ConfigParameters += @{
                     ProductNames = @("aad", "defender", "exo", "powerplatform", "sharepoint", "teams")
                 }
-                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParams)
+                $RunRegoParameters['ScubaConfig'] = (New-Object -Type PSObject -Property $ConfigParameters)
                 { Invoke-RunRego @RunRegoParameters } | Should -Not -Throw
             }
         }
