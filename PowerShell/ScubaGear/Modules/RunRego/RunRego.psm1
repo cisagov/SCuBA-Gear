@@ -1,3 +1,4 @@
+using module '../Error/Error.psm1'
 function Invoke-Rego {
     <#
     .Description
@@ -52,7 +53,8 @@ function Invoke-Rego {
         $TestResults
     }
     catch {
-        throw "Error calling the OPA executable: $($_)"
+        Resolve-Error($_)
+        throw "Error calling the OPA executable: $($_)" #TODO still throw this error? or resolve and stop?
     }
 }
 

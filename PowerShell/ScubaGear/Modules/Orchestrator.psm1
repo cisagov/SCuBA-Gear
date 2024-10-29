@@ -1,4 +1,5 @@
 using module 'ScubaConfig\ScubaConfig.psm1'
+using module 'Error/Error.psm1'
 
 function Invoke-SCuBA {
     <#
@@ -592,7 +593,8 @@ function Invoke-ProviderList {
                     $ProviderJSON += $RetVal
                 }
                 catch {
-                    Write-Error "Error with the $($BaselineName) Provider. See the exception message for more details:  $($_)"
+                    Resolve-Error($_)
+                    Write-Error "Error with the $($BaselineName) Provider. See the exception message for more details:  $($_.Exception.Message)"
                     $ProdProviderFailed += $Product
                     Write-Warning "$($Product) will be omitted from the output because of the failure above `n`n"
                 }
@@ -639,9 +641,10 @@ function Invoke-ProviderList {
             $ProdProviderFailed
         }
         catch {
+            Resolve-Error($_)
             $InvokeProviderListErrorMessage = "Fatal Error involving the Provider functions. `
-            Ending ScubaGear execution. See the exception message for more details: $($_)`n$($_.ScriptStackTrace)"
-            throw $InvokeProviderListErrorMessage
+            Ending ScubaGear execution. See the exception message for more details: $($_.Exception.Message)" #`n$($_.ScriptStackTrace)"
+            throw $InvokeProviderListErrorMessage #TODO throw exception here or in calling function? handle exception in resolve error? I dont want a recurisve call to resolve-error...
         }
     }
 }
@@ -722,7 +725,8 @@ function Invoke-RunRego {
                     $TestResults += $RetVal
                 }
                 catch {
-                    Write-Error "Error with the $($BaselineName) Rego invocation. See the exception message for more details:  $($_)"
+                    Resolve-Error($_)
+                    Write-Error "Error with the $($BaselineName) Rego invocation. See the exception message for more details:  $($_.Exception.Message)"
                     $ProdRegoFailed += $Product
                     Write-Warning "$($Product) will be omitted from the output because of the failure above"
                 }
@@ -735,8 +739,9 @@ function Invoke-RunRego {
             $ProdRegoFailed
         }
         catch {
+            Resolve-Error($_)
             $InvokeRegoErrorMessage = "Fatal Error involving the OPA output function. `
-            Ending ScubaGear execution. See the exception message for more details: $($_)"
+            Ending ScubaGear execution. See the exception message for more details: $($_.Exception.Message)"
             throw $InvokeRegoErrorMessage
         }
     }
@@ -905,8 +910,9 @@ function ConvertTo-ResultsCsv {
             $ScubaResultsCsv | ConvertTo-Csv -NoTypeInformation | Set-Content -Path $CsvFileName -Encoding $Encoding
         }
         catch {
+            Resolve-Error($_)
             $Warning = "Error involving the creation of CSV version of output. "
-            $Warning += "See the exception message for more details: $($_)"
+            $Warning += "See the exception message for more details: $($_.Exception.Message)"
             Write-Warning $Warning
         }
     }
@@ -1035,8 +1041,9 @@ function Merge-JsonOutput {
             }
         }
         catch {
+            Resolve-Error($_)
             $MergeJsonErrorMessage = "Fatal Error involving the Json reports aggregation. `
-            Ending ScubaGear execution. See the exception message for more details: $($_)"
+            Ending ScubaGear execution. See the exception message for more details: $($_.Exception.Message)"
             throw $MergeJsonErrorMessage
         }
     }
@@ -1228,8 +1235,9 @@ function Invoke-ReportCreation {
             }
         }
         catch {
+            Resolve-Error($_)
             $InvokeReportErrorMessage = "Fatal Error involving the Report Creation. `
-            Ending ScubaGear execution. See the exception message for more details: $($_)"
+            Ending ScubaGear execution. See the exception message for more details: $($_.Exception.Message)"
             throw $InvokeReportErrorMessage
         }
     }
@@ -1444,8 +1452,9 @@ function Import-Resources {
         }
     }
     catch {
+        Resolve-Error($_)
         $ImportResourcesErrorMessage = "Fatal Error involving importing PowerShell modules. `
-            Ending ScubaGear execution. See the exception message for more details: $($_)"
+            Ending ScubaGear execution. See the exception message for more details: $($_.Excpetion.Message)"
             throw $ImportResourcesErrorMessage
     }
 }

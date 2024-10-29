@@ -1,3 +1,4 @@
+using module '../Error/Error.psm1'
 function Export-EXOProvider {
     <#
     .Description
@@ -120,7 +121,8 @@ function Get-EXOTenantDetail {
             $TenantId = (ConvertFrom-Json $Content).token_endpoint.Split("/")[3]
         }
         catch {
-            Write-Warning "Unable to retrieve EXO Tenant ID with URI. This may be caused by proxy error see 'Running the Script Behind Some Proxies' in the README for a solution. $($_)"
+            Resolve-Error($_)
+            Write-Warning "Unable to retrieve EXO Tenant ID with URI. This may be caused by proxy error see 'Running the Script Behind Some Proxies' in the README for a solution. $($_.Exception.Message)"
         }
 
         $EXOTenantInfo = @{
@@ -133,7 +135,8 @@ function Get-EXOTenantDetail {
         $EXOTenantInfo
     }
     catch {
-        Write-Warning "Error retrieving Tenant details using Get-EXOTenantDetail $($_)"
+        Resolve-Error($_)
+        Write-Warning "Error retrieving Tenant details using Get-EXOTenantDetail $($_.Exception.Message)"
         $EXOTenantInfo = @{
             "DisplayName" = "Error retrieving Display name";
             "DomainName" = "Error retrieving Domain name";
@@ -175,7 +178,7 @@ function Select-DohServer {
         }
         catch {
             # This server didn't work, try the next one
-            continue
+            continue #TODO what happens if none of them work?
         }
     }
     $PreferredServer
@@ -258,6 +261,7 @@ function Invoke-RobustDnsTxt {
             }
             else {
                 # The query failed, possibly a transient failure. Retry if we haven't reached $MaxsTries.
+                Resolve-Error($_)
                 $LogEntries += @{
                     "query_name"=$Qname;
                     "query_method"="traditional";
@@ -326,6 +330,7 @@ function Invoke-RobustDnsTxt {
                 catch {
                     # The DoH query failed, likely due to a network issue. Retry if we haven't reached
                     # $MaxTries.
+                    Resolve-Error($_)
                     $LogEntries += @{
                         "query_name"=$Qname;
                         "query_method"="DoH";
