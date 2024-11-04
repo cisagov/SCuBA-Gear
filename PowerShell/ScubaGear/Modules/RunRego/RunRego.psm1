@@ -54,7 +54,7 @@ function Invoke-Rego {
     }
     catch {
         Resolve-Error($_)
-        throw "Error calling the OPA executable: $($_)" #TODO still throw this error? or resolve and stop?
+        throw "Error calling the OPA executable: $($_)" #TODO still throw this error? or resolve and stop? Do we need this try catch? handle in calling functions?
     }
 }
 
