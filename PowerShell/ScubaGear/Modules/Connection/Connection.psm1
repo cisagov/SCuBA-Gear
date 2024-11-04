@@ -302,7 +302,7 @@ function Disconnect-SCuBATenant {
        continue
    } catch {
        Resolve-Error($_)
-       Write-Error "ERRROR: Could not disconnect from $Product`n$($Error[0]): "
+       Write-Error "ERROR: Could not disconnect from $Product`n$($Error[0]): "
    } finally {
        $ErrorActionPreference = "Continue"
    }
