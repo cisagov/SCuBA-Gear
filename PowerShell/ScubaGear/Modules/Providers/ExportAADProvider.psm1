@@ -448,6 +448,22 @@ function LoadObjectDataIntoPrivilegedUserHashtable {
                     $PrivilegedUsers[$GroupMember.Id].roles += $RoleName
                 }
             }
+            elseif ($Objecttype -eq "serviceprincipal") {
+
+                # In this section we need to add the service principal information to the "service principal" hashtable
+                if (-Not $PrivilegedUsers.ContainsKey($ObjectId)) {
+                    $AADServicePrincipal = Get-MgBetaServicePrincipal -ServicePrincipalId $ObjectId -ErrorAction Stop
+                    $PrivilegedUsers[$ObjectId] = @{
+                        "DisplayName" = $AADServicePrincipal.DisplayName
+                        "ServicePrincipalId" = $AADServicePrincipal.Id
+                        "AppId" = $AADServicePrincipal.AppId
+                        "roles" = @()
+                    }
+                }
+                if ($PrivilegedUsers[$ObjectId].roles -notcontains $RoleName) {
+                    $PrivilegedUsers[$ObjectId].roles += $RoleName
+                }
+            }
         }
 
         # Since this is a group, we need to also process assignments in PIM in case it is in PIM for Groups
