@@ -448,20 +448,20 @@ function LoadObjectDataIntoPrivilegedUserHashtable {
                     $PrivilegedUsers[$GroupMember.Id].roles += $RoleName
                 }
             }
-            elseif ($Objecttype -eq "serviceprincipal") {
+            elseif ($Membertype -eq "serviceprincipal") {
 
                 # In this section we need to add the service principal information to the "service principal" hashtable
-                if (-Not $PrivilegedUsers.ContainsKey($ObjectId)) {
-                    $AADServicePrincipal = Get-MgBetaServicePrincipal -ServicePrincipalId $ObjectId -ErrorAction Stop
-                    $PrivilegedUsers[$ObjectId] = @{
+                if (-Not $PrivilegedUsers.ContainsKey($GroupMember.Id)) {
+                    $AADServicePrincipal = Get-MgBetaServicePrincipal -ServicePrincipalId $GroupMember.Id -ErrorAction Stop
+                    $PrivilegedUsers[$GroupMember.Id] = @{
                         "DisplayName" = $AADServicePrincipal.DisplayName
                         "ServicePrincipalId" = $AADServicePrincipal.Id
                         "AppId" = $AADServicePrincipal.AppId
                         "roles" = @()
                     }
                 }
-                if ($PrivilegedUsers[$ObjectId].roles -notcontains $RoleName) {
-                    $PrivilegedUsers[$ObjectId].roles += $RoleName
+                if ($PrivilegedUsers[$GroupMember.Id].roles -notcontains $RoleName) {
+                    $PrivilegedUsers[$GroupMember.Id].roles += $RoleName
                 }
             }
         }
