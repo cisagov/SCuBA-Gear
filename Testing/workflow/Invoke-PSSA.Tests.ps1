@@ -24,7 +24,7 @@ Describe "PSSA Check" {
   It "PSSA should write output" {
     # There should be write-warning statements
     $global:Warnings | Should -Not -BeNullOrEmpty
-    # Note: This is a bit fragile.  It only works as long as one of these two
+    # Note: This is a little bit fragile.  It only work as long as one of these two
     # summary statements is the final output written by the Invoke function.
     $global:Warnings | Select-Object -Last 1 | Should -BeIn @("Problems were found in the PowerShell scripts.", "No problems were found in the PowerShell scripts.")
   }
