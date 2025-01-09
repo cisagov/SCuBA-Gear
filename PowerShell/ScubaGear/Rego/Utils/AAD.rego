@@ -148,12 +148,16 @@ GroupExclusionsFullyExempt(Policy, PolicyID) := true if {
 # Return true if policy matches all conditions:
 # All for include users & applications,
 # block for built in controls, enabled,
-# & NO excluded roles.
+# & NO excluded users, roles, groups, & applications.
 PolicyConditionsMatch(Policy) := true if {
     Contains(Policy.Conditions.Users.IncludeUsers, "All") == true
     Contains(Policy.Conditions.Applications.IncludeApplications, "All") == true
+    Count(Policy.Conditions.Users.ExcludeUsers) == 0
+    Count(Policy.Conditions.Users.ExcludeRoles) == 0
+    Count(Policy.Conditions.Users.ExcludeGroups) == 0
+    Count(Policy.Conditions.Applications.ExcludeApplications) == 0
+
     Policy.State == "enabled"
-    IsEmptyContainer(Policy.Conditions.Users.ExcludeRoles) == true
 } else := false
 
 # Save the Allowed MFA items as a set, check if there are any MFA
