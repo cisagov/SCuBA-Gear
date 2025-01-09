@@ -2,6 +2,7 @@ package utils.aad
 import rego.v1
 import data.utils.report.ArraySizeStr
 import data.utils.report.Description
+import data.utils.key.IsEmptyContainer
 import data.utils.key.Contains
 import data.utils.key.Count
 import data.utils.key.ConvertToSet
@@ -151,10 +152,12 @@ GroupExclusionsFullyExempt(Policy, PolicyID) := true if {
 PolicyConditionsMatch(Policy) := true if {
     Contains(Policy.Conditions.Users.IncludeUsers, "All") == true
     Contains(Policy.Conditions.Applications.IncludeApplications, "All") == true
-    Count(Policy.Conditions.Users.ExcludeUsers) == 0
+    # Count(Policy.Conditions.Users.ExcludeUsers) == 0
     # Count(Policy.Conditions.Users.ExcludeRoles) == 0
     # Count(Policy.Conditions.Users.ExcludeGroups) == 0
     # Count(Policy.Conditions.Applications.ExcludeApplications) == 0
+    IsEmptyContainer(Policy.Conditions.Users.ExcludeRoles) == true
+
 
     Policy.State == "enabled"
 } else := false
